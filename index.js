@@ -270,7 +270,7 @@ module.exports = function (options) {
   const storage = multer.memoryStorage();
   const upload = multer({ storage: storage });
 
-  router.use(upload.fields(['video', 'photo', 'audio', 'video[]', 'photo[]', 'audio[]'].map(type => ({ name: type }))));
+  router.use(upload.fields(['video', 'photo', 'audio', 'video[]', 'photo[]', 'audio[]', 'file'].map(type => ({ name: type }))));
 
   // Ensure the needed parts are there
   router.use((req, res, next) => {
@@ -308,7 +308,9 @@ module.exports = function (options) {
       .then(() => tokenReference(req))
       .then(tokenReference => matchAnyTokenReference(token, [].concat(tokenReference)))
       .then(valid => {
-        if (valid && !(valid instanceof Error)) { return next(); }
+        if (valid && !(valid instanceof Error)) {
+          return next();
+        }
 
         if (valid instanceof TokenScopeError) {
           return res.status(401).json({
@@ -363,7 +365,9 @@ module.exports = function (options) {
   });
 
   router.post('/', (req, res, next) => {
-    if (req.query.q) {
+    if (options.media === true && !req.files) {
+      return badRequest(res, 'Missing media files');
+    } else if (req.query.q) {
       return badRequest(res, 'Queries only supported with GET method', 405);
     } else if (req.body.mp && req.body.mp.action) {
       return badRequest(res, 'This endpoint does not yet support updates.', 501);
@@ -371,15 +375,21 @@ module.exports = function (options) {
       return badRequest(res, 'Missing "h" value.');
     }
 
-    const data = req.body;
-
-    if (!data.properties) {
-      return badRequest(res, 'Not finding any properties.');
+    let data, handler;
+    if (options.media === true) {
+      handler = options.mediaHandler;
+      data = req.files;
+    } else {
+      handler = options.handler;
+      data = req.body;
+      if (!data.properties) {
+        return badRequest(res, 'Not finding any properties.');
+      }
     }
 
     Promise.resolve()
       // This way the function doesn't have to return a Promise
-      .then(() => options.handler(data, req))
+      .then(() => handler(data, req))
       .then(result => {
         if (!result || !result.url) {
           return res.sendStatus(400);
