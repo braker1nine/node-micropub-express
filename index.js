@@ -182,7 +182,8 @@ module.exports = function (options) {
     throw new Error('No correct token set. It\'s needed for authorization checks.');
   }
 
-  if (!options.handler || typeof options.handler !== 'function') {
+  let handler = options.media === true ? options.mediaHandler : options.handler;
+  if (!handler || typeof handler !== 'function') {
     throw new Error('No correct handler set. It\'s needed to actually process a Micropub request.');
   }
 
