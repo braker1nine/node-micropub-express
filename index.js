@@ -366,14 +366,18 @@ module.exports = function (options) {
   });
 
   router.post('/', (req, res, next) => {
-    if (options.media === true && !req.files) {
-      return badRequest(res, 'Missing media files');
-    } else if (req.query.q) {
-      return badRequest(res, 'Queries only supported with GET method', 405);
-    } else if (req.body.mp && req.body.mp.action) {
-      return badRequest(res, 'This endpoint does not yet support updates.', 501);
-    } else if (!req.body.type) {
-      return badRequest(res, 'Missing "h" value.');
+    if (options.media === true) {
+      if (!req.files) {
+        return badRequest(res, 'Missing media files');
+      }
+    } else {
+      if (req.query.q) {
+        return badRequest(res, 'Queries only supported with GET method', 405);
+      } else if (req.body.mp && req.body.mp.action) {
+        return badRequest(res, 'This endpoint does not yet support updates.', 501);
+      } else if (!req.body.type) {
+        return badRequest(res, 'Missing "h" value.');
+      }
     }
 
     let data, handler;
